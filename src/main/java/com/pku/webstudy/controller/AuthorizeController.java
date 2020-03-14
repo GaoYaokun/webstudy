@@ -64,7 +64,6 @@ public class AuthorizeController {
             user.setGmtModify(user.getGmtCreate());
             userMapper.insert(user);
             response.addCookie(new Cookie("token", token));
-//            request.getSession().setAttribute("user", gitHubUser);
             return "redirect:/";
         }else{
             //登录失败
