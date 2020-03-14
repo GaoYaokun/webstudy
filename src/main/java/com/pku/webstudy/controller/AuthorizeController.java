@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.pku.webstudy.dto.AccessTokenDTO;
 import com.pku.webstudy.dto.GitHubUser;
+import com.pku.webstudy.mapper.UserMapper;
+import com.pku.webstudy.model.User;
 import com.pku.webstudy.provider.GitHubProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.UUID;
 
 /**
  * @Author Yorke
@@ -21,6 +24,9 @@ import javax.servlet.http.HttpServletRequest;
 public class AuthorizeController {
     @Autowired
     private GitHubProvider gitHubProvider;
+    @Autowired
+    private UserMapper userMapper;
+
     @Value("${github.client.id}")
     private String clientId;
     @Value("${github.client.secret}")
@@ -42,11 +48,19 @@ public class AuthorizeController {
         //通过code获取accesstoken
         String accessToken = gitHubProvider.getAccessToken(accessTokenDTO);
         //通过accesstoken获取用户信息
-        GitHubUser user = gitHubProvider.getUser(accessToken);
+        GitHubUser gitHubUser = gitHubProvider.getUser(accessToken);
 
-        if(user != null){
+        if(gitHubUser != null){
+            User user = new User();
+            user.setToken(UUID.randomUUID().toString());
+            user.setName(gitHubUser.getName());
+            user.setAccountId(String.valueOf(gitHubUser.getId()));
+            user.setGmtCreate(System.currentTimeMillis());
+            user.setGmtModify(user.getGmtCreate());
+            userMapper.insert(user);
+
             //登录成功, 写cookie 和session
-            request.getSession().setAttribute("user", user);
+            request.getSession().setAttribute("user", gitHubUser);
             return "redirect:/";
         }else{
             //登录失败
